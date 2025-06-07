@@ -1,30 +1,190 @@
-.App {
-  position: absolute;
-  top: 0;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  text-align: center;
-  height: 100%;
-  padding: 1rem;
+/* pages/popup/src/Popup.css */
+
+/* Basic Resets & Variables */
+:root {
+  --zapp-primary: #4f46e5; /* Indigo-600 */
+  --zapp-primary-light: #6366f1; /* Indigo-500 */
+  --zapp-bg-light: #f9fafb; /* Gray-50 */
+  --zapp-bg-dark: #ffffff; /* White */
+  --zapp-border: #e5e7eb; /* Gray-200 */
+  --zapp-text-dark: #1f2937; /* Gray-900 */
+  --zapp-text-medium: #6b7280; /* Gray-500 */
+  --zapp-text-light: #9ca3af; /* Gray-400 */
+  --zapp-success: #10b981; /* Green-500 */
+  --zapp-error: #ef4444; /* Red-500 */
+  --zapp-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
 }
 
-.App-logo {
-  height: 50vmin;
-  margin-bottom: 1rem;
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif; /* Consider adding Inter font or another modern sans-serif */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
-.App-header {
-  height: 100%;
+.zapp-popup {
+  width: 340px; /* Slightly wider for better content display */
+  padding: 16px;
+  background-color: var(--zapp-bg-dark);
+  border-radius: 8px;
+  box-shadow: var(--zapp-shadow);
+  color: var(--zapp-text-dark);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: flex-end;
-  font-size: 0.75rem;
+  gap: 16px; /* Spacing between main sections */
 }
 
-code {
-  background: rgba(148, 163, 184, 0.5);
-  border-radius: 0.25rem;
-  padding: 0.2rem 0.5rem;
+.zapp-header {
+  display: flex;
+  align-items: center;
+  justify-content: center; /* Center the logo and title */
+  gap: 8px;
+  margin-bottom: 8px; /* Space below header */
+}
+
+.zapp-logo {
+  height: 28px; /* Adjust size as needed */
+  width: auto;
+}
+
+.zapp-title {
+  font-size: 1.5rem; /* Larger title */
+  font-weight: 700;
+  color: var(--zapp-primary);
+  margin: 0;
+}
+
+.zapp-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.zapp-label {
+  font-size: 0.875rem; /* Smaller label for prompts */
+  font-weight: 600;
+  color: var(--zapp-text-medium);
+  margin-bottom: 4px;
+}
+
+.zapp-content-display {
+  background: var(--zapp-bg-light);
+  border: 1px solid var(--zapp-border);
+  border-radius: 6px;
+  padding: 10px 12px;
+  min-height: 40px;
+  max-height: 100px; /* Max height for scrollable content */
+  overflow-y: auto; /* Scroll if content is too long */
+  word-break: break-word;
+  font-size: 0.9375rem; /* Slightly larger text */
+  line-height: 1.4;
+  color: var(--zapp-text-dark);
+  box-sizing: border-box; /* Include padding in height/width */
+}
+
+.text-placeholder {
+  color: var(--zapp-text-light);
+  font-style: italic;
+}
+
+.zapp-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--zapp-border);
+  border-radius: 6px;
+  font-size: 1rem;
+  color: var(--zapp-text-dark);
+  box-sizing: border-box;
+  outline: none; /* Remove default focus outline */
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.zapp-input::placeholder {
+  color: var(--zapp-text-light);
+}
+
+.zapp-input:focus {
+  border-color: var(--zapp-primary-light);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2); /* Soft focus ring */
+}
+
+.zapp-suggestions-container {
+  display: flex;
+  flex-direction: column;
+  gap: 8px; /* Spacing between suggestion buttons */
+  max-height: 180px; /* Limit height for scrollable suggestions */
+  overflow-y: auto;
+  padding-right: 4px; /* Space for scrollbar */
+}
+
+.zapp-suggestion-button {
+  display: flex; /* Use flex for internal alignment */
+  width: 100%;
+  padding: 10px 12px;
+  background-color: var(--zapp-bg-light);
+  border: 1px solid var(--zapp-border);
+  border-radius: 6px;
+  text-align: left;
+  font-size: 0.95rem;
+  color: var(--zapp-text-dark);
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  outline: none;
+  align-items: center;
+  justify-content: space-between; /* Space out content/icon if any */
+}
+
+.zapp-suggestion-button:hover {
+  background-color: #f0f4f8; /* Lighter hover background */
+  border-color: var(--zapp-primary-light);
+}
+
+.zapp-suggestion-button:active {
+  transform: translateY(1px); /* Little press effect */
+}
+
+.zapp-suggestion-button:focus-visible {
+  border-color: var(--zapp-primary);
+  box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+}
+
+.zapp-feedback {
+  margin-top: 10px;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-weight: 600;
+  text-align: center;
+  transition: all 0.3s ease-in-out;
+}
+
+.zapp-feedback.success {
+  background-color: rgba(16, 185, 129, 0.1); /* Green-500 with transparency */
+  color: var(--zapp-success);
+}
+
+.zapp-feedback.error {
+  background-color: rgba(239, 68, 68, 0.1); /* Red-500 with transparency */
+  color: var(--zapp-error);
+}
+
+.no-suggestions-message {
+  font-size: 0.875rem;
+  color: var(--zapp-text-light);
+  text-align: center;
+  padding: 10px 0;
+}
+
+/* Optional: Loading spinner for suggestions */
+.loading-spinner {
+  border: 4px solid #f3f3f3;
+  border-top: 4px solid var(--zapp-primary);
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+  margin: 10px auto; /* Center the spinner */
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
 }

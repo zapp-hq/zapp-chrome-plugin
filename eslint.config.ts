@@ -65,6 +65,7 @@ export default config(
       'arrow-body-style': ['error', 'as-needed'],
       '@typescript-eslint/consistent-type-imports': 'error',
       '@typescript-eslint/consistent-type-exports': 'error',
+      '@typescript-eslint/no-explicit-any': 'error',
       'import-x/order': [
         'error',
         {

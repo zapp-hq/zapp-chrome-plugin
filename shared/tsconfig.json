@@ -1,0 +1,20 @@
+// shared/tsconfig.json
+{
+  "compilerOptions": {
+    "composite": true,
+    "declaration": true,
+    "declarationMap": true,
+    "sourceMap": true,
+    "outDir": "dist",
+    "strict": true,
+    "moduleResolution": "node",
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "module": "esnext",
+    "target": "esnext",
+    "lib": ["esnext"]
+  },
+  "include": ["."],
+  "exclude": ["dist", "node_modules"]
+}
