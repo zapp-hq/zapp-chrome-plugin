@@ -19,26 +19,30 @@ const Popup: React.FC = () => {
 
   // --- Fetch content on mount ---
   useEffect(() => {
-    // Request the stored ZappContent from the background script
-    chrome.runtime.sendMessage({ type: 'GET_CURRENT_ZAPP_CONTENT' }, (response: ZappContent | null) => {
-      if (response) {
-        setCapturedContent(response);
-      } else {
-        // Fallback: If no content was explicitly stored (e.g., if popup opened without selection/context menu)
-        // You might want to get the current page's URL as default content here.
-        chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
-          const tab = tabs[0];
-          if (tab?.url) {
-            setCapturedContent({
-              type: 'page',
-              value: tab.url,
-              pageUrl: tab.url,
-              title: tab.title || '',
-            });
-          }
-        });
+    const fetchContent = async () => {
+      try {
+        const response = await chrome.runtime.sendMessage({ type: 'GET_CURRENT_ZAPP_CONTENT' });
+        if (response) {
+          setCapturedContent(response);
+        } else {
+          chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+            const tab = tabs[0];
+            if (tab?.url) {
+              setCapturedContent({
+                type: 'page',
+                value: tab.url,
+                pageUrl: tab.url,
+                title: tab.title || '',
+              });
+            }
+          });
+        }
+      } catch (e) {
+        console.error('Zapp: Failed to fetch content from background', e);
       }
-    });
+    };
+
+    fetchContent();
   }, []);
 
   // --- Request Suggestions from Background (Debounced) ---
