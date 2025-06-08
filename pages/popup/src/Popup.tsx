@@ -8,8 +8,7 @@ import type {
   ZappIntentMessage,
 } from '../../../shared/types';
 import type React from 'react';
-
-import './Popup.css'; // Import the new CSS
+import './Popup.css';
 
 const Popup: React.FC = () => {
   const [capturedContent, setCapturedContent] = useState<ZappContent | null>(null);
@@ -18,22 +17,29 @@ const Popup: React.FC = () => {
   const [feedbackMessage, setFeedbackMessage] = useState<string>('');
   const [isLoadingSuggestions, setIsLoadingSuggestions] = useState<boolean>(false);
 
-  // --- Initial Content Fetch on Mount ---
+  // --- Fetch content on mount ---
   useEffect(() => {
-    // Request the captured content from the background script
-    const fetchContent = async () => {
-      try {
-        const response: ZappContent | null = await chrome.runtime.sendMessage({
-          type: 'GET_CURRENT_ZAPP_CONTENT',
+    // Request the stored ZappContent from the background script
+    chrome.runtime.sendMessage({ type: 'GET_CURRENT_ZAPP_CONTENT' }, (response: ZappContent | null) => {
+      if (response) {
+        setCapturedContent(response);
+      } else {
+        // Fallback: If no content was explicitly stored (e.g., if popup opened without selection/context menu)
+        // You might want to get the current page's URL as default content here.
+        chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
+          const tab = tabs[0];
+          if (tab?.url) {
+            setCapturedContent({
+              type: 'page',
+              value: tab.url,
+              pageUrl: tab.url,
+              title: tab.title || '',
+            });
+          }
         });
-        setCapturedContent(response || null);
-      } catch (error) {
-        console.error('Error fetching captured content:', error);
-        setFeedbackMessage('Failed to load content.');
       }
-    };
-    fetchContent();
-  }, []); // Run once on mount
+    });
+  }, []);
 
   // --- Request Suggestions from Background (Debounced) ---
   const requestSuggestions = useCallback(async () => {
@@ -48,7 +54,7 @@ const Popup: React.FC = () => {
         type: 'ZAPP_REQUEST_SUGGESTIONS',
         intentPhrase: userInput,
         content: capturedContent,
-      } as ZappRequestSuggestionsMessage); // Cast to ensure correct type
+      } as ZappRequestSuggestionsMessage);
 
       if (response && response.suggestions) {
         setSuggestions(response.suggestions);
@@ -67,7 +73,7 @@ const Popup: React.FC = () => {
   useEffect(() => {
     const timeout = setTimeout(() => {
       requestSuggestions();
-    }, 300); // 300ms debounce
+    }, 300);
     return () => clearTimeout(timeout);
   }, [userInput, capturedContent, requestSuggestions]);
 
@@ -82,15 +88,16 @@ const Popup: React.FC = () => {
     try {
       const response = await chrome.runtime.sendMessage({
         type: 'ZAPP_INTENT',
-        intentPhrase: userInput, // The phrase user typed
+        intentPhrase: userInput,
         content: capturedContent,
         chosenSuggestion: chosenSuggestion,
       } as ZappIntentMessage);
 
       if (response && response.status === 'success') {
         setFeedbackMessage('Poof! Done! 🚀');
-        setUserInput(''); // Clear input after successful Zapp
-        setSuggestions([]); // Clear suggestions
+        setUserInput('');
+        setSuggestions([]);
+        setCapturedContent(null); // Clear local state after successful Zapp
       } else {
         setFeedbackMessage(`Error: ${response?.message || 'Action failed!'}`);
       }
@@ -98,7 +105,7 @@ const Popup: React.FC = () => {
       console.error('Error sending intent:', error);
       setFeedbackMessage('Network error or background script failed!');
     } finally {
-      setTimeout(() => setFeedbackMessage(''), 2500); // Give user time to see feedback
+      setTimeout(() => setFeedbackMessage(''), 2500);
     }
   };
 
@@ -118,7 +125,7 @@ const Popup: React.FC = () => {
           id: 'other_generic_zapp',
           label: `Zapp "${userInput}"`,
           actionType: 'other',
-          payload: { userInput: userInput }, // Pass user input as payload
+          payload: { userInput: userInput },
         };
         sendIntentToBackground(genericSuggestion);
       } else {
@@ -142,7 +149,6 @@ const Popup: React.FC = () => {
   return (
     <div className="zapp-popup">
       <div className="zapp-header">
-        <img src="/logo_vertical_dark.svg" alt="Zapp! Logo" className="zapp-logo" />
         <h1 className="zapp-title">Zapp!</h1>
       </div>
 
@@ -173,10 +179,7 @@ const Popup: React.FC = () => {
           <p className="no-suggestions-message">No specific actions found for "{userInput}".</p>
         )}
         {suggestions.map(s => (
-          <button
-            key={s.id} // Use unique ID for key
-            onClick={() => handleSuggestionClick(s)}
-            className="zapp-suggestion-button">
+          <button key={s.id} onClick={() => handleSuggestionClick(s)} className="zapp-suggestion-button">
             {s.label}
           </button>
         ))}

@@ -50,7 +50,7 @@ const manifest = {
   content_scripts: [
     {
       matches: ['<all_urls>'],
-      js: ['content/all.iife.js'],
+      js: ['content/all.iife.js', 'content/selectionListener.js'],
       css: ['content.css'],
     },
   ],
