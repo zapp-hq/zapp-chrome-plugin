@@ -137,14 +137,18 @@ chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
     sendResponse(response);
     return true;
   } else if (message.type === 'GET_CURRENT_ZAPP_CONTENT') {
-    // Popup requests the current content (either from context menu or last selection)
-    const result = await chrome.storage.session.get('currentZappContent');
-    sendResponse(result.currentZappContent || null);
-    // Do NOT remove 'currentZappContent' here. The popup needs it to display.
-    // It should only be removed AFTER a Zapp action is successfully performed.
+    // This is an async operation, so we need to ensure sendResponse is handled correctly
+    try {
+      const result = await chrome.storage.session.get('currentZappContent');
+      const contentToSend = result.currentZappContent || null;
+      console.log('Background: About to send currentZappContent:', contentToSend);
+      sendResponse(contentToSend); // Send the actual content
+    } catch (error) {
+      console.error('Background: Error fetching or sending ZappContent:', error);
+      sendResponse(null); // Send null on error
+    }
     return true;
   }
-  // Removed 'GET_CURRENT_ZAPP_SELECTION' since we are consolidating.
 });
 
 console.log('Zapp background script loaded.');

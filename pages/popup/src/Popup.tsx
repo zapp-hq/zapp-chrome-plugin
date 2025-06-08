@@ -22,9 +22,15 @@ const Popup: React.FC = () => {
     const fetchContent = async () => {
       try {
         const response = await chrome.runtime.sendMessage({ type: 'GET_CURRENT_ZAPP_CONTENT' });
-        if (response) {
+        console.log('Popup: Received response from background:', response);
+
+        // Check if response is a valid ZappContent object
+        // Add a more robust check here!
+        if (response && typeof response === 'object' && 'type' in response && 'value' in response) {
           setCapturedContent(response);
+          console.log('Popup: Successfully set capturedContent:', response); // ADD THIS LOG
         } else {
+          console.warn('Popup: Response from background was not valid ZappContent, falling back:', response); // ADD THIS LOG
           chrome.tabs.query({ active: true, currentWindow: true }, tabs => {
             const tab = tabs[0];
             if (tab?.url) {
@@ -34,6 +40,7 @@ const Popup: React.FC = () => {
                 pageUrl: tab.url,
                 title: tab.title || '',
               });
+              console.log('Popup: Fallback to current page URL:', tab.url);
             }
           });
         }
@@ -149,6 +156,13 @@ const Popup: React.FC = () => {
       ? capturedContent.value
       : capturedContent.title || capturedContent.value
     : '';
+
+  useEffect(() => {
+    console.log('--- Popup State Update ---');
+    console.log('capturedContent:', capturedContent);
+    console.log('displayedContent:', displayedContent);
+    console.log('-------------------------');
+  }, [capturedContent, displayedContent]);
 
   return (
     <div className="zapp-popup">
