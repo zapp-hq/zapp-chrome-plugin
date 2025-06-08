@@ -94,61 +94,74 @@ chrome.contextMenus.onClicked.addListener(async (info, tab) => {
 });
 
 // --- Message Listener for communication with popup and content script ---
-chrome.runtime.onMessage.addListener(async (message, sender, sendResponse) => {
+// The listener itself is NOT async. It returns a Promise for async responses.
+chrome.runtime.onMessage.addListener((message, sender) => {
+  // Handle ZAPP_SELECTION synchronously (no response expected by popup)
   if (message.type === 'ZAPP_SELECTION') {
-    // When content script sends selection, store it as generic text content.
-    // This will overwrite any previous 'currentZappContent' if a selection is made
-    // AFTER a context menu action, or if the popup is opened without a context menu.
-    const selectedTextContent: ZappContent = {
-      type: 'text',
-      value: message.selection,
-      pageUrl: sender.tab?.url || '',
-      title: sender.tab?.title || '',
-    };
-    await chrome.storage.session.set({ currentZappContent: selectedTextContent });
-    // No need to sendResponse for ZAPP_SELECTION unless the content script needs confirmation.
-    return; // No sendResponse needed here, as it's an asynchronous set
-  } else if (message.type === 'ZAPP_INTENT') {
-    const zappIntentMessage = message as ZappIntentMessage;
-    const { intentPhrase, content, chosenSuggestion } = zappIntentMessage;
-
-    const result = await executeZappAction(chosenSuggestion, content);
-
-    // After successful action, store user preference and clear current content
-    if (result.success) {
-      await saveUserPreference(intentPhrase, content, chosenSuggestion);
-      // Crucially, clear the content after it has been "Zapped"
-      await chrome.storage.session.remove('currentZappContent');
-      sendResponse({ status: 'success' });
-    } else {
-      sendResponse({ status: 'error', message: result.error });
-    }
-    return true; // Indicate that sendResponse will be called asynchronously
-  } else if (message.type === 'ZAPP_REQUEST_SUGGESTIONS') {
-    const requestMessage = message as ZappRequestSuggestionsMessage;
-    const { intentPhrase, content } = requestMessage;
-
-    const suggestions = await getZappSuggestions(intentPhrase, content);
-
-    const response: ZappSuggestionsResponseMessage = {
-      type: 'ZAPP_SUGGESTIONS_RESPONSE',
-      suggestions: suggestions,
-    };
-    sendResponse(response);
-    return true;
-  } else if (message.type === 'GET_CURRENT_ZAPP_CONTENT') {
-    // This is an async operation, so we need to ensure sendResponse is handled correctly
-    try {
-      const result = await chrome.storage.session.get('currentZappContent');
-      const contentToSend = result.currentZappContent || null;
-      console.log('Background: About to send currentZappContent:', contentToSend);
-      sendResponse(contentToSend); // Send the actual content
-    } catch (error) {
-      console.error('Background: Error fetching or sending ZappContent:', error);
-      sendResponse(null); // Send null on error
-    }
-    return true;
+    (async () => {
+      // Use an IIFE here to allow await without making the listener async
+      const selectedTextContent: ZappContent = {
+        type: 'text',
+        value: message.selection,
+        pageUrl: sender.tab?.url || '',
+        title: sender.tab?.title || '',
+      };
+      await chrome.storage.session.set({ currentZappContent: selectedTextContent });
+      // No sendResponse or return true needed here as the sender doesn't await a response.
+    })();
+    return false; // Indicate that sendResponse will NOT be called (or return nothing)
   }
+
+  // For message types that require an async response, return a Promise
+  if (message.type === 'ZAPP_INTENT') {
+    return (async () => {
+      // Return an immediately invoked async function
+      const zappIntentMessage = message as ZappIntentMessage;
+      const { intentPhrase, content, chosenSuggestion } = zappIntentMessage;
+
+      const result = await executeZappAction(chosenSuggestion, content);
+
+      if (result.success) {
+        await saveUserPreference(intentPhrase, content, chosenSuggestion);
+        await chrome.storage.session.remove('currentZappContent');
+        return { status: 'success' }; // This value resolves the sendMessage promise
+      } else {
+        return { status: 'error', message: result.error }; // This value resolves the sendMessage promise
+      }
+    })();
+  } else if (message.type === 'ZAPP_REQUEST_SUGGESTIONS') {
+    return (async () => {
+      // Return an immediately invoked async function
+      const requestMessage = message as ZappRequestSuggestionsMessage;
+      const { intentPhrase, content } = requestMessage;
+
+      const suggestions = await getZappSuggestions(intentPhrase, content);
+
+      const response: ZappSuggestionsResponseMessage = {
+        type: 'ZAPP_SUGGESTIONS_RESPONSE',
+        suggestions: suggestions,
+      };
+      return response; // This value resolves the sendMessage promise
+    })();
+  } else if (message.type === 'GET_CURRENT_ZAPP_CONTENT') {
+    return (async () => {
+      // Return an immediately invoked async function
+      try {
+        const result = await chrome.storage.session.get('currentZappContent');
+        const contentToSend = result.currentZappContent || null;
+        console.log('Background: About to send currentZappContent (via Promise):', contentToSend);
+        return contentToSend; // This value resolves the sendMessage promise
+      } catch (error) {
+        console.error('Background: Error fetching or sending ZappContent:', error);
+        return null; // Resolve the promise with null on error
+      }
+    })();
+  }
+
+  // For any other messages that don't need an explicit async response,
+  // or if no conditions are met, the listener implicitly returns undefined (or false),
+  // meaning sendResponse will not be called asynchronously for those.
+  return false; // Explicitly indicate no async response unless a specific type handles it above.
 });
 
 console.log('Zapp background script loaded.');
